@@ -1,27 +1,35 @@
 #! python3
 
 import pygame
-import random
 import os
+import random
 
 pygame.init()
 
 WIDTH, HEIGHT = 800, 800
 WIDTH_START, HEIGHT_START = 80, 80
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption('Python Snake')
 GAME_WIDTH = 72
 GAME_HEIGHT = 72
+BACKGROUND = pygame.image.load(os.path.join('Extra', 'background.jpg'))
+BACKGROUND = pygame.transform.scale(BACKGROUND, (800, 800))
+SNAKE_IMG = pygame.image.load(os.path.join('Extra', 'snake.png'))
+SNAKE_IMG = pygame.transform.scale(SNAKE_IMG, (120, 120))
+SNAKE_IMG2 = pygame.transform.flip(SNAKE_IMG, True, False)
 CLOCK = pygame.time.Clock()
 FPS = 15
 N = 10
 WHITE = (255, 255, 255)
 BLACK = (0, 0 , 0)
 RED = (255, 0, 0)
-GREEN = (0, 255, 0)
+DARK_GREEN = (19, 87, 18)
 BROWN = (63, 29, 6)
 YELLOW = (220, 223, 54)
 FONT = pygame.font.SysFont('comicsans', 60)
-BEST_SCORE = int(open('best_score.txt','r').read())
+NICE_FONT = pygame.font.SysFont('CURLZ___', 80, 1)
+BEST_SCORE = int(open(os.path.join('Extra', 'best_score.txt'),'r').read())
+
 
 class Game:
     def __init__(self):
@@ -32,7 +40,7 @@ class Game:
         self.view = 'horizontal'
 
     def draw_window(self):
-        SCREEN.fill(BROWN)
+        SCREEN.fill(DARK_GREEN)
         text = FONT.render(f'Score: {self.score}', 1, YELLOW)
         text2 = FONT.render(f'Best score: {BEST_SCORE}', 1, YELLOW)
         SCREEN.blit(text2, (480, 20))
@@ -64,13 +72,28 @@ class Game:
             return True
         return False
 
-    @staticmethod
-    def print_game_over():
-        font = pygame.font.SysFont('comicsans', 120)
-        text = font.render('GAME OVER', 1, RED)
-        SCREEN.blit(text, (100, 100))
+    def draw_end(self):
+        SCREEN.blit(BACKGROUND, (0, 0))
+        text = NICE_FONT.render('GAME OVER', 1, RED)
+        if self.score > BEST_SCORE:
+            text2 = NICE_FONT.render(f'NEW RECORD: {self.score} !', 1, BLACK)
+            SCREEN.blit(text2, (70, 300))
+        else:
+            text2 = NICE_FONT.render(f'BEST SCORE: {BEST_SCORE}', 1, BLACK)
+            text3 = NICE_FONT.render(f'YOUR SCORE: {self.score}', 1, BLACK)
+            SCREEN.blit(text2, (80, 300))
+            SCREEN.blit(text3, (80, 400))
+        SCREEN.blit(text, (120, 100))
         pygame.display.flip()
 
+    def end_loop(self):
+        running = True
+        while running:
+            self.draw_end()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+        pygame.quit()
     def increase_size(self):
         # e is a helper variable to add/subtract from either x or y.
         if self.view == 'horizontal':
@@ -110,14 +133,42 @@ class Game:
             if sn.x < 0:  # left
                 sn.x = WIDTH
 
+    def draw_menu(self):
+        SCREEN.blit(BACKGROUND, (0, 0))
+        SCREEN.blit(SNAKE_IMG, (160, 360))
+        SCREEN.blit(SNAKE_IMG2, (550, 360))
+        text = NICE_FONT.render('PYTHON SNAKE', 1, (100, 100, 100))
+        text2 = NICE_FONT.render('PYTHON SNAKE', 1, BLACK)
+        text3 = NICE_FONT.render('PLAY', 1, BLACK)
+        SCREEN.blit(text, (65, 195))
+        SCREEN.blit(text2, (70, 200))
+        SCREEN.blit(text3, (300, 360))
+        pygame.draw.rect(SCREEN, BLACK, (290, 365, 245, 100), width=3)
+        pygame.display.flip()
+
+    def main_menu(self):
+        running = True
+        rect_area = [(j, i) for i in range(365, 365+100) for j in range(290, 290+245)]
+        while running:
+            self.draw_menu()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    pygame.quit()
+                    exit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.pos in rect_area:
+                        running = False
+
+
     def main(self):
+        self.main_menu()
         modif_x, modif_y = -N, 0
         running = True
         force_quit = False
         while running:
             CLOCK.tick(FPS)
             if self.game_over():
-                self.print_game_over()
                 running = False
                 continue
             if self.scored():
@@ -153,11 +204,7 @@ class Game:
         if force_quit:
             pygame.quit()
             exit()
-        while not running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = True
-        pygame.quit()
+        self.end_loop()
 
 if __name__ == '__main__':
     run = Game()
