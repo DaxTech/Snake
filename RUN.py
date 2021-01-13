@@ -72,28 +72,6 @@ class Game:
             return True
         return False
 
-    def draw_end(self):
-        SCREEN.blit(BACKGROUND, (0, 0))
-        text = NICE_FONT.render('GAME OVER', 1, RED)
-        if self.score > BEST_SCORE:
-            text2 = NICE_FONT.render(f'NEW RECORD: {self.score} !', 1, BLACK)
-            SCREEN.blit(text2, (70, 300))
-        else:
-            text2 = NICE_FONT.render(f'BEST SCORE: {BEST_SCORE}', 1, BLACK)
-            text3 = NICE_FONT.render(f'YOUR SCORE: {self.score}', 1, BLACK)
-            SCREEN.blit(text2, (80, 300))
-            SCREEN.blit(text3, (80, 400))
-        SCREEN.blit(text, (120, 100))
-        pygame.display.flip()
-
-    def end_loop(self):
-        running = True
-        while running:
-            self.draw_end()
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-        pygame.quit()
     def increase_size(self):
         # e is a helper variable to add/subtract from either x or y.
         if self.view == 'horizontal':
@@ -133,6 +111,14 @@ class Game:
             if sn.x < 0:  # left
                 sn.x = WIDTH
 
+    def reset_features(self):
+        self.score = 0
+        self.snake = [pygame.Rect(GAME_WIDTH // 2 * N, GAME_HEIGHT // 2 * N, N, N)]
+        self.fruit = self.generate_fruit()
+        self.direction = 'right'
+        self.view = 'horizontal'
+
+
     def draw_menu(self):
         SCREEN.blit(BACKGROUND, (0, 0))
         SCREEN.blit(SNAKE_IMG, (160, 360))
@@ -160,10 +146,8 @@ class Game:
                     if event.pos in rect_area:
                         running = False
 
-
-    def main(self):
-        self.main_menu()
-        modif_x, modif_y = -N, 0
+    def main_loop(self):
+        modif_x, modif_y = N, 0
         running = True
         force_quit = False
         while running:
@@ -186,25 +170,68 @@ class Game:
                         modif_y, modif_x = -N, 0
                         self.direction = 'up'
                         self.view = 'vertical'
+                        break
                     if event.key == pygame.K_s and not self.direction == 'up':
                         modif_y, modif_x = N, 0
                         self.direction = 'down'
                         self.view = 'vertical'
+                        break
                     if event.key == pygame.K_d and not self.direction == 'left':
                         modif_x, modif_y = N, 0
                         self.direction = 'right'
                         self.view = 'horizontal'
+                        break
                     if event.key == pygame.K_a and not self.direction == 'right':
                         modif_x, modif_y = -N, 0
                         self.direction = 'left'
                         self.view = 'horizontal'
-        if self.score > BEST_SCORE:
-            with open('best_score.txt', 'w') as fwriter:
-                fwriter.write(str(self.score))
+                        break
         if force_quit:
             pygame.quit()
             exit()
-        self.end_loop()
+
+    def draw_end(self):
+        SCREEN.blit(BACKGROUND, (0, 0))
+        text = NICE_FONT.render('GAME OVER', 1, RED)
+        play_again = FONT.render('PLAY AGAIN', 1 , BLACK)
+        if self.score > BEST_SCORE:
+            text2 = NICE_FONT.render(f'NEW RECORD: {self.score}!', 1, BLACK)
+            SCREEN.blit(text2, (70, 300))
+        else:
+            text2 = NICE_FONT.render(f'YOUR SCORE: {self.score}', 1, BLACK)
+            SCREEN.blit(text2, (70, 300))
+        SCREEN.blit(text, (120, 100))
+        SCREEN.blit(play_again, (260, 500))
+        pygame.draw.rect(SCREEN, BLACK, (250, 490, 270, 60), width=3)
+        pygame.display.flip()
+
+    def end_loop(self):
+        running = True
+        play_again_rect = ((j, i) for i in range(490, 490+60) for j in range(250, 250+270))
+        while running:
+            self.draw_end()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.pos in play_again_rect:
+                        return True
+        pygame.quit()
+    def main(self):
+        self.main_menu()
+        running = True
+        while running:
+            self.reset_features()
+            self.main_loop()
+            if self.score > BEST_SCORE:
+                with open(os.path.join('Extra', 'best_score.txt'), 'w') as fwriter:
+                    fwriter.write(str(self.score))
+            if self.end_loop():
+                continue  
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+        pygame.quit()
 
 if __name__ == '__main__':
     run = Game()
